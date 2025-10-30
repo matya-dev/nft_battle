@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFT Cases</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <!-- Загрузка -->
@@ -14,21 +13,6 @@
             <div class="loading-spinner"></div>
             <div class="loading-text">Загрузка...</div>
             <div class="loading-time" id="loading-time">0.00s</div>
-        </div>
-    </div>
-
-    <!-- Telegram Auth -->
-    <div id="telegram-auth" class="telegram-auth" style="display: none;">
-        <div class="auth-container">
-            <div class="auth-icon">🔐</div>
-            <h2>Авторизация</h2>
-            <p>Для игры требуется авторизация через Telegram</p>
-            <button id="telegram-login-btn" class="telegram-btn">
-                <span>Войти через Telegram</span>
-            </button>
-            <div class="auth-note">
-                Ваши данные защищены сквозным шифрованием
-            </div>
         </div>
     </div>
 
@@ -42,12 +26,8 @@
                 <span id="balance">25</span> ⭐
             </div>
             <div class="user-info">
-                <img id="user-avatar" class="user-avatar" src="" alt="Avatar">
-                <div class="user-details">
-                    <span id="username">Игрок</span>
-                    <div class="level-badge">Новичок</div>
-                </div>
-                <button id="logout-btn" class="logout-btn" title="Выйти">🚪</button>
+                <span id="username">Игрок</span>
+                <div class="level-badge">Новичок</div>
             </div>
         </header>
 
@@ -72,6 +52,13 @@
                         <div class="menu-icon">👤</div>
                         <div class="menu-title">ПРОФИЛЬ</div>
                         <div class="menu-desc">Статистика и настройки</div>
+                    </div>
+
+                    <!-- Скрытая кнопка админ-панели -->
+                    <div class="menu-card admin-only" id="admin-btn" style="display: none;">
+                        <div class="menu-icon">👑</div>
+                        <div class="menu-title">АДМИН-ПАНЕЛЬ</div>
+                        <div class="menu-desc">Управление пользователями</div>
                     </div>
                 </div>
             </div>
@@ -135,25 +122,23 @@
             <div id="profile-section" class="section">
                 <div class="profile-header">
                     <h2>ПРОФИЛЬ</h2>
-                    <div class="profile-user">
-                        <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
-                        <div class="profile-user-info">
-                            <div class="profile-name" id="profile-name">Игрок</div>
-                            <div class="profile-id" id="profile-id">ID: ---</div>
-                        </div>
-                    </div>
                     <div class="profile-info">
+                        <div class="info-item">
+                            <label>Имя:</label>
+                            <input type="text" id="profile-username" class="profile-input">
+                            <button id="save-username" class="btn-small">Сохранить</button>
+                        </div>
                         <div class="info-item">
                             <label>Баланс:</label>
                             <span id="profile-balance">25 ⭐</span>
                         </div>
                         <div class="info-item">
-                            <label>Дата регистрации:</label>
-                            <span id="registration-date">-</span>
+                            <label>ID пользователя:</label>
+                            <span id="user-id">-</span>
                         </div>
                         <div class="info-item">
-                            <label>Telegram ID:</label>
-                            <span id="telegram-id">-</span>
+                            <label>Дата регистрации:</label>
+                            <span id="registration-date">-</span>
                         </div>
                     </div>
                 </div>
@@ -175,24 +160,72 @@
                         </div>
                     </div>
                 </div>
+                
+                <button id="back-btn-profile" class="back-btn">← Назад</button>
+            </div>
 
-                <!-- Админ-панель -->
-                <div class="admin-panel">
-                    <h3>👑 АДМИН-ПАНЕЛЬ</h3>
-                    <div class="admin-controls">
-                        <div class="admin-item">
-                            <label>Добавить звезды:</label>
-                            <input type="number" id="add-stars" class="admin-input" value="100" min="1" max="10000">
-                            <button id="add-stars-btn" class="btn-small">Добавить</button>
+            <!-- Админ-панель -->
+            <div id="admin-section" class="section">
+                <div class="admin-header">
+                    <h2>👑 АДМИН-ПАНЕЛЬ</h2>
+                    <div class="admin-stats">
+                        Всего пользователей: <span id="total-users">0</span>
+                    </div>
+                </div>
+
+                <div class="admin-controls-panel">
+                    <div class="admin-search">
+                        <input type="text" id="user-search" class="admin-input" placeholder="Поиск по ID или имени">
+                        <button id="search-user" class="btn-small">Найти</button>
+                    </div>
+
+                    <div class="user-management">
+                        <h3>Управление пользователем</h3>
+                        <div class="user-info-admin">
+                            <div class="info-item">
+                                <label>ID:</label>
+                                <span id="admin-user-id">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Имя:</label>
+                                <span id="admin-username">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Баланс:</label>
+                                <span id="admin-balance">-</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Статус:</label>
+                                <span id="admin-status" class="status-active">Активен</span>
+                            </div>
                         </div>
-                        <div class="admin-item">
-                            <label>Сбросить прогресс:</label>
-                            <button id="reset-progress" class="btn-small reset-btn">Сбросить</button>
+
+                        <div class="admin-actions">
+                            <div class="action-group">
+                                <label>Баланс:</label>
+                                <input type="number" id="balance-amount" class="admin-input" value="100" min="1" max="10000">
+                                <button id="add-balance" class="btn-small">Добавить</button>
+                                <button id="remove-balance" class="btn-small remove-btn">Забрать</button>
+                            </div>
+                            
+                            <div class="action-group">
+                                <label>Действия:</label>
+                                <button id="ban-user" class="btn-small ban-btn">Забанить</button>
+                                <button id="unban-user" class="btn-small unban-btn">Разбанить</button>
+                                <button id="reset-user" class="btn-small reset-btn">Сбросить прогресс</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="users-list">
+                        <h3>Все пользователи</h3>
+                        <div class="users-grid" id="users-grid">
+                            <!-- Список пользователей будет здесь -->
                         </div>
                     </div>
                 </div>
                 
-                <button id="back-btn-profile" class="back-btn">← Назад</button>
+                <button id="back-btn-admin" class="back-btn">← Назад</button>
             </div>
         </main>
     </div>
