@@ -1,6 +1,7 @@
-class NFTCases {
+class FoxGame {
     constructor() {
-        this.userData = this.loadUserData();
+        this.tg = null;
+        this.userData = null;
         this.isOpening = false;
         this.nftCollection = [];
         this.currentCase = null;
@@ -13,9 +14,70 @@ class NFTCases {
         this.init();
     }
 
+    // Инициализация Telegram Web App
+    async init() {
+        console.log('🎮 Инициализация FoxGame');
+        
+        try {
+            this.tg = window.Telegram.WebApp;
+            this.tg.expand();
+            
+            // Инициализируем пользователя из Telegram
+            await this.initTelegramUser();
+            await this.loadNFTCollection();
+            this.showLoadingScreen();
+            
+        } catch (error) {
+            console.error('Ошибка инициализации Telegram:', error);
+            // Резервная инициализация для тестирования вне Telegram
+            await this.initTestUser();
+            await this.loadNFTCollection();
+            this.showLoadingScreen();
+        }
+    }
+
+    // Инициализация пользователя из Telegram
+    async initTelegramUser() {
+        const initData = this.tg.initData || '';
+        const initDataUnsafe = this.tg.initDataUnsafe || {};
+        const user = initDataUnsafe.user || {};
+        
+        console.log('Telegram User:', user);
+        
+        if (user && user.id) {
+            const userId = user.id.toString();
+            this.userData = this.loadUserData(userId, user);
+            
+            // Сохраняем в общую базу
+            this.allUsersData[userId] = this.userData;
+            this.saveAllUsersData();
+            
+        } else {
+            throw new Error('Пользователь Telegram не найден');
+        }
+    }
+
+    // Резервная инициализация для тестирования
+    async initTestUser() {
+        const testUserId = 'test_user_' + Math.random().toString(36).substr(2, 9);
+        const testUser = {
+            id: testUserId,
+            first_name: 'Test',
+            last_name: 'User',
+            username: 'testuser'
+        };
+        
+        this.userData = this.loadUserData(testUserId, testUser);
+        this.allUsersData[testUserId] = this.userData;
+        this.saveAllUsersData();
+        
+        console.log('⚠️ Тестовый режим. Запуск вне Telegram');
+    }
+
     // Загрузка данных пользователя
-    loadUserData() {
-        const userCookie = this.getCookie('nft_cases_user');
+    loadUserData(userId, telegramUser) {
+        const userCookie = this.getCookie('foxgame_user_' + userId);
+        
         if (userCookie) {
             try {
                 return JSON.parse(userCookie);
@@ -24,10 +86,15 @@ class NFTCases {
             }
         }
         
-        const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        // Создаем нового пользователя
         return {
             id: userId,
-            username: 'Игрок' + Math.floor(Math.random() * 1000),
+            username: telegramUser.username || 
+                     [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') || 
+                     'Игрок' + Math.floor(Math.random() * 1000),
+            firstName: telegramUser.first_name || '',
+            lastName: telegramUser.last_name || '',
+            telegramUsername: telegramUser.username || '',
             balance: 25,
             registrationDate: new Date().toISOString(),
             stats: {
@@ -36,46 +103,36 @@ class NFTCases {
                 mostExpensiveNFT: 0
             },
             inventory: [],
-            isBanned: false
+            isBanned: false,
+            isTelegramUser: !!telegramUser.id
         };
     }
 
     // Загрузка данных всех пользователей
     loadAllUsersData() {
-        const allUsersCookie = this.getCookie('nft_cases_all_users');
+        const allUsersCookie = this.getCookie('foxgame_all_users');
         if (allUsersCookie) {
             try {
-                const data = JSON.parse(allUsersCookie);
-                // Добавляем текущего пользователя если его нет в списке
-                if (!data[this.userData.id]) {
-                    data[this.userData.id] = this.userData;
-                    this.setCookie('nft_cases_all_users', JSON.stringify(data), 365);
-                }
-                return data;
+                return JSON.parse(allUsersCookie);
             } catch (e) {
                 console.error('Ошибка загрузки данных всех пользователей:', e);
             }
         }
-        
-        // Создаем новую базу с текущим пользователем
-        const newData = {
-            [this.userData.id]: this.userData
-        };
-        this.setCookie('nft_cases_all_users', JSON.stringify(newData), 365);
-        return newData;
+        return {};
     }
 
-    // Сохранение данных
+    // Сохранение данных пользователя
     saveUserData() {
-        this.setCookie('nft_cases_user', JSON.stringify(this.userData), 365);
-        // Также обновляем в общей базе
-        this.allUsersData[this.userData.id] = this.userData;
-        this.setCookie('nft_cases_all_users', JSON.stringify(this.allUsersData), 365);
+        if (this.userData && this.userData.id) {
+            this.setCookie('foxgame_user_' + this.userData.id, JSON.stringify(this.userData), 365);
+            this.allUsersData[this.userData.id] = this.userData;
+            this.saveAllUsersData();
+        }
     }
 
     // Сохранение данных всех пользователей
     saveAllUsersData() {
-        this.setCookie('nft_cases_all_users', JSON.stringify(this.allUsersData), 365);
+        this.setCookie('foxgame_all_users', JSON.stringify(this.allUsersData), 365);
     }
 
     // Работа с куки
@@ -96,7 +153,7 @@ class NFTCases {
 
     // Проверка прав администратора
     isAdmin() {
-        return this.adminIds.includes(this.userData.id);
+        return this.userData && this.adminIds.includes(this.userData.id);
     }
 
     // Загрузка NFT коллекции для кейсов
@@ -105,37 +162,21 @@ class NFTCases {
         
         const basePath = 'NFT/';
         
-        // Коллекция предметов с обновленными шансами выпадения
         this.nftCollection = [
-            // 15 звезд (60% шанс)
             { id: 1, name: 'Медведь', image: `${basePath}bear/bear.gif`, value: 15, rarity: 'common', weight: 80, fallback: '🧸' },
             { id: 2, name: 'Сердце', image: `${basePath}heart/heart.gif`, value: 15, rarity: 'common', weight: 80, fallback: '❤️' },
-
-            // 25 звезд (20% шанс)
             { id: 3, name: 'Роза', image: `${basePath}rose/rose.gif`, value: 25, rarity: 'uncommon', weight: 10, fallback: '🌹' },
             { id: 4, name: 'Подарок', image: `${basePath}gift/gift.gif`, value: 25, rarity: 'uncommon', weight: 10, fallback: '🎁' },
-
-            // 50 звезд (15% шанс)
             { id: 5, name: 'Торт', image: `${basePath}cake/cake.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '🎂' },
             { id: 6, name: 'Ракета', image: `${basePath}rocket/rocket.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '🚀' },
             { id: 7, name: 'Цветы', image: `${basePath}flowers/flowers.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '💐' },
-
-            // 100 звезд (5% шанс)
             { id: 8, name: 'Кубок', image: `${basePath}cup/cup.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '🏆' },
             { id: 9, name: 'Кольцо', image: `${basePath}ring/ring.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '💍' },
             { id: 10, name: 'Алмаз', image: `${basePath}diamond/diamond.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '💎' },
         ];
 
-        console.log('✅ NFT коллекция загружена с обновленными шансами');
+        console.log('✅ NFT коллекция загружена');
         return Promise.resolve();
-    }
-
-    // Инициализация
-    async init() {
-        console.log('🎮 Инициализация NFT Cases');
-        
-        await this.loadNFTCollection();
-        this.showLoadingScreen();
     }
 
     // Экран загрузки
@@ -169,6 +210,7 @@ class NFTCases {
         // Показываем кнопку админ-панели если пользователь админ
         if (this.isAdmin()) {
             document.getElementById('admin-btn').style.display = 'block';
+            this.showNotification('👑 Админ', 'Доступ к админ-панели разрешен', 'win');
         }
     }
 
@@ -230,11 +272,6 @@ class NFTCases {
 
         document.getElementById('back-btn-admin').addEventListener('click', () => {
             this.showSection('main-menu');
-        });
-
-        // Сохранение имени
-        document.getElementById('save-username').addEventListener('click', () => {
-            this.saveUsername();
         });
 
         // Админ-панель: поиск пользователя
@@ -304,7 +341,7 @@ class NFTCases {
             item.dataset.nftId = nft.id;
             
             item.innerHTML = `
-                <img src="${nft.image}" alt="${nft.name}" class="nft-image">
+                <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.style.display='none'; this.parentNode.innerHTML += '<div class=\"nft-fallback\">${nft.fallback}</div>'">
                 <div class="nft-name">${nft.name}</div>
             `;
             
@@ -422,7 +459,6 @@ class NFTCases {
         
         if (!wonNFTData) return;
         
-        // Простая анимация выигрыша
         this.simpleWinAnimation(closestItem, wonNFTData);
         
         const wonNFT = {
@@ -538,7 +574,7 @@ class NFTCases {
         
         let iconContent = '';
         if (image) {
-            iconContent = `<img src="${image}" alt="${title}" class="notification-icon">`;
+            iconContent = `<img src="${image}" alt="${title}" class="notification-icon" onerror="this.style.display='none'; this.parentNode.innerHTML = '<div class=\"notification-icon\">${fallback || '🎁'}</div>' + this.parentNode.innerHTML;">`;
         } else if (fallback) {
             iconContent = `<div class="notification-icon">${fallback}</div>`;
         } else {
@@ -636,19 +672,6 @@ class NFTCases {
             this.updateUI();
             this.updateInventory();
             this.showNotification('💰 Продажа', `${nft.name} продан за ${nft.value} ⭐!`, 'win');
-        }
-    }
-
-    // Сохранение имени
-    saveUsername() {
-        const newUsername = document.getElementById('profile-username').value.trim();
-        if (newUsername && newUsername.length >= 3) {
-            this.userData.username = newUsername;
-            this.saveUserData();
-            this.updateUI();
-            this.showNotification('✅ Успех', 'Имя пользователя сохранено!', 'win');
-        } else {
-            this.showNotification('❌ Ошибка', 'Имя должно содержать минимум 3 символа', 'error');
         }
     }
 
@@ -833,9 +856,9 @@ class NFTCases {
 
     // Обновление профиля
     updateProfile() {
-        document.getElementById('profile-username').value = this.userData.username;
-        document.getElementById('profile-balance').textContent = this.userData.balance + ' ⭐';
         document.getElementById('user-id').textContent = this.userData.id;
+        document.getElementById('profile-username').textContent = this.userData.username;
+        document.getElementById('profile-balance').textContent = this.userData.balance + ' ⭐';
         document.getElementById('registration-date').textContent = new Date(this.userData.registrationDate).toLocaleDateString('ru-RU');
         
         document.getElementById('total-opened').textContent = this.userData.stats.totalOpened;
@@ -864,5 +887,5 @@ class NFTCases {
 
 // Инициализация игры
 document.addEventListener('DOMContentLoaded', () => {
-    window.nftGame = new NFTCases();
+    window.foxGame = new FoxGame();
 });
