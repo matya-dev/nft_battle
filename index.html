@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFT Cases</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <!-- Загрузка -->
@@ -13,6 +14,21 @@
             <div class="loading-spinner"></div>
             <div class="loading-text">Загрузка...</div>
             <div class="loading-time" id="loading-time">0.00s</div>
+        </div>
+    </div>
+
+    <!-- Telegram Auth -->
+    <div id="telegram-auth" class="telegram-auth" style="display: none;">
+        <div class="auth-container">
+            <div class="auth-icon">🔐</div>
+            <h2>Авторизация</h2>
+            <p>Для игры требуется авторизация через Telegram</p>
+            <button id="telegram-login-btn" class="telegram-btn">
+                <span>Войти через Telegram</span>
+            </button>
+            <div class="auth-note">
+                Ваши данные защищены сквозным шифрованием
+            </div>
         </div>
     </div>
 
@@ -26,8 +42,12 @@
                 <span id="balance">25</span> ⭐
             </div>
             <div class="user-info">
-                <span id="username">Игрок</span>
-                <div class="level-badge">Новичок</div>
+                <img id="user-avatar" class="user-avatar" src="" alt="Avatar">
+                <div class="user-details">
+                    <span id="username">Игрок</span>
+                    <div class="level-badge">Новичок</div>
+                </div>
+                <button id="logout-btn" class="logout-btn" title="Выйти">🚪</button>
             </div>
         </header>
 
@@ -115,12 +135,14 @@
             <div id="profile-section" class="section">
                 <div class="profile-header">
                     <h2>ПРОФИЛЬ</h2>
-                    <div class="profile-info">
-                        <div class="info-item">
-                            <label>Имя:</label>
-                            <input type="text" id="profile-username" class="profile-input">
-                            <button id="save-username" class="btn-small">Сохранить</button>
+                    <div class="profile-user">
+                        <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
+                        <div class="profile-user-info">
+                            <div class="profile-name" id="profile-name">Игрок</div>
+                            <div class="profile-id" id="profile-id">ID: ---</div>
                         </div>
+                    </div>
+                    <div class="profile-info">
                         <div class="info-item">
                             <label>Баланс:</label>
                             <span id="profile-balance">25 ⭐</span>
@@ -128,6 +150,10 @@
                         <div class="info-item">
                             <label>Дата регистрации:</label>
                             <span id="registration-date">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Telegram ID:</label>
+                            <span id="telegram-id">-</span>
                         </div>
                     </div>
                 </div>
