@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Cases</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Загрузка -->
+    <div id="loading" class="loading">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Загрузка...</div>
+            <div class="loading-time" id="loading-time">0.00s</div>
+        </div>
+    </div>
+
+    <!-- Контейнер для уведомлений -->
+    <div id="notifications" class="notifications"></div>
+
+    <div class="container" style="display: none;">
+        <!-- Верхняя панель -->
+        <header class="header">
+            <div class="user-balance">
+                <span id="balance">25</span> ⭐
+            </div>
+            <div class="user-info">
+                <span id="username">Игрок</span>
+                <div class="level-badge">Новичок</div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main">
+            <!-- Главное меню -->
+            <div id="main-menu" class="section active">
+                <div class="menu-cards">
+                    <div class="menu-card" id="cases-btn">
+                        <div class="menu-icon">🎁</div>
+                        <div class="menu-title">КЕЙСЫ</div>
+                        <div class="menu-desc">Открывай и получай NFT</div>
+                    </div>
+                    
+                    <div class="menu-card" id="inventory-btn">
+                        <div class="menu-icon">🎒</div>
+                        <div class="menu-title">ИНВЕНТАРЬ</div>
+                        <div class="menu-desc">Твои коллекции</div>
+                    </div>
+                    
+                    <div class="menu-card" id="profile-btn">
+                        <div class="menu-icon">👤</div>
+                        <div class="menu-title">ПРОФИЛЬ</div>
+                        <div class="menu-desc">Статистика и настройки</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кейсы -->
+            <div id="cases-section" class="section">
+                <div class="cases-selection">
+                    <div class="cases-header">
+                        <button id="back-cases-main" class="back-btn">← Назад</button>
+                        <h3>ВЫБЕРИ КЕЙС</h3>
+                    </div>
+                    <div class="cases-cards">
+                        <div class="case-card" data-case="standard">
+                            <div class="case-icon">📦</div>
+                            <div class="case-name">СТАНДАРТНЫЙ КЕЙС</div>
+                            <div class="case-cost">25 ⭐ за открытие</div>
+                            <div class="case-items">11 предметов</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Открытие кейса с прокрутом -->
+                <div id="case-opening" class="case-opening" style="display: none;">
+                    <div class="case-opening-header">
+                        <button id="back-to-cases" class="back-btn">← Назад к кейсам</button>
+                        <h3>ОТКРЫТИЕ КЕЙСА</h3>
+                    </div>
+                    
+                    <div class="roulette-container">
+                        <div class="roulette-strip" id="roulette-strip">
+                            <!-- NFT будут добавляться динамически -->
+                        </div>
+                        <div class="roulette-center"></div>
+                    </div>
+                    
+                    <div class="roulette-controls">
+                        <button id="open-case-btn" class="spin-btn">
+                            <span>🎁 Открыть за 25 ⭐</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Инвентарь -->
+            <div id="inventory-section" class="section">
+                <div class="inventory-header">
+                    <h2>ИНВЕНТАРЬ</h2>
+                    <div class="inventory-stats">
+                        Всего NFT: <span id="total-nft">0</span>
+                    </div>
+                </div>
+                
+                <div class="inventory-grid" id="inventory-grid">
+                    <!-- NFT будут добавляться динамически -->
+                </div>
+                
+                <button id="back-btn-inventory" class="back-btn">← Назад</button>
+            </div>
+
+            <!-- Профиль -->
+            <div id="profile-section" class="section">
+                <div class="profile-header">
+                    <h2>ПРОФИЛЬ</h2>
+                    <div class="profile-info">
+                        <div class="info-item">
+                            <label>Имя:</label>
+                            <input type="text" id="profile-username" class="profile-input">
+                            <button id="save-username" class="btn-small">Сохранить</button>
+                        </div>
+                        <div class="info-item">
+                            <label>Баланс:</label>
+                            <span id="profile-balance">25 ⭐</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Дата регистрации:</label>
+                            <span id="registration-date">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-stats">
+                    <h3>СТАТИСТИКА</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-opened">0</div>
+                            <div class="stat-label">Кейсов открыто</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-nft-won">0</div>
+                            <div class="stat-label">NFT получено</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="most-expensive">0 ⭐</div>
+                            <div class="stat-label">Самый дорогой NFT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Админ-панель -->
+                <div class="admin-panel">
+                    <h3>👑 АДМИН-ПАНЕЛЬ</h3>
+                    <div class="admin-controls">
+                        <div class="admin-item">
+                            <label>Добавить звезды:</label>
+                            <input type="number" id="add-stars" class="admin-input" value="100" min="1" max="10000">
+                            <button id="add-stars-btn" class="btn-small">Добавить</button>
+                        </div>
+                        <div class="admin-item">
+                            <label>Сбросить прогресс:</label>
+                            <button id="reset-progress" class="btn-small reset-btn">Сбросить</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="back-btn-profile" class="back-btn">← Назад</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
