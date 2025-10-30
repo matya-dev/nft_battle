@@ -22,14 +22,12 @@ class FoxGame {
             this.tg = window.Telegram.WebApp;
             this.tg.expand();
             
-            // Инициализируем пользователя из Telegram
             await this.initTelegramUser();
             await this.loadNFTCollection();
             this.showLoadingScreen();
             
         } catch (error) {
             console.error('Ошибка инициализации Telegram:', error);
-            // Резервная инициализация для тестирования вне Telegram
             await this.initTestUser();
             await this.loadNFTCollection();
             this.showLoadingScreen();
@@ -38,7 +36,6 @@ class FoxGame {
 
     // Инициализация пользователя из Telegram
     async initTelegramUser() {
-        const initData = this.tg.initData || '';
         const initDataUnsafe = this.tg.initDataUnsafe || {};
         const user = initDataUnsafe.user || {};
         
@@ -76,17 +73,14 @@ class FoxGame {
 
     // Загрузка данных пользователя
     loadUserData(userId, telegramUser) {
-        const userCookie = this.getCookie('foxgame_user_' + userId);
-        
-        if (userCookie) {
-            try {
-                return JSON.parse(userCookie);
-            } catch (e) {
-                console.error('Ошибка загрузки данных:', e);
-            }
+        // Проверяем, есть ли пользователь в общей базе
+        if (this.allUsersData[userId]) {
+            console.log('✅ Пользователь найден в базе:', this.allUsersData[userId]);
+            return this.allUsersData[userId];
         }
         
         // Создаем нового пользователя
+        console.log('🆕 Создаем нового пользователя:', userId);
         return {
             id: userId,
             username: telegramUser.username || 
@@ -108,47 +102,39 @@ class FoxGame {
         };
     }
 
-    // Загрузка данных всех пользователей
+    // Загрузка данных всех пользователей из localStorage
     loadAllUsersData() {
-        const allUsersCookie = this.getCookie('foxgame_all_users');
-        if (allUsersCookie) {
-            try {
-                return JSON.parse(allUsersCookie);
-            } catch (e) {
-                console.error('Ошибка загрузки данных всех пользователей:', e);
+        try {
+            const data = localStorage.getItem('foxgame_all_users');
+            if (data) {
+                const parsed = JSON.parse(data);
+                console.log('📊 Загружена база пользователей:', Object.keys(parsed).length, 'пользователей');
+                return parsed;
             }
+        } catch (e) {
+            console.error('Ошибка загрузки базы пользователей:', e);
         }
+        
+        console.log('🆕 Создана новая база пользователей');
         return {};
     }
 
     // Сохранение данных пользователя
     saveUserData() {
         if (this.userData && this.userData.id) {
-            this.setCookie('foxgame_user_' + this.userData.id, JSON.stringify(this.userData), 365);
             this.allUsersData[this.userData.id] = this.userData;
             this.saveAllUsersData();
         }
     }
 
-    // Сохранение данных всех пользователей
+    // Сохранение данных всех пользователей в localStorage
     saveAllUsersData() {
-        this.setCookie('foxgame_all_users', JSON.stringify(this.allUsersData), 365);
-    }
-
-    // Работа с куки
-    setCookie(name, value, days) {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${encodeURIComponent(value)};expires=${date.toUTCString()};path=/`;
-    }
-
-    getCookie(name) {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            const [key, value] = cookie.trim().split('=');
-            if (key === name) return decodeURIComponent(value);
+        try {
+            localStorage.setItem('foxgame_all_users', JSON.stringify(this.allUsersData));
+            console.log('💾 База пользователей сохранена:', Object.keys(this.allUsersData).length, 'пользователей');
+        } catch (e) {
+            console.error('Ошибка сохранения базы пользователей:', e);
         }
-        return null;
     }
 
     // Проверка прав администратора
@@ -211,6 +197,7 @@ class FoxGame {
         if (this.isAdmin()) {
             document.getElementById('admin-btn').style.display = 'block';
             this.showNotification('👑 Админ', 'Доступ к админ-панели разрешен', 'win');
+            console.log('🔓 Админ-панель активирована для пользователя:', this.userData.id);
         }
     }
 
@@ -218,6 +205,7 @@ class FoxGame {
     setupEventListeners() {
         console.log('⚙️ Настройка обработчиков событий');
         
+        // Основные кнопки навигации
         document.getElementById('cases-btn').addEventListener('click', () => {
             this.showSection('cases-section');
         });
@@ -300,6 +288,13 @@ class FoxGame {
         // Админ-панель: сброс прогресса
         document.getElementById('reset-user').addEventListener('click', () => {
             this.resetUserProgress();
+        });
+
+        // Поиск по Enter
+        document.getElementById('user-search').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.searchUser();
+            }
         });
     }
 
@@ -701,7 +696,7 @@ class FoxGame {
         if (foundUser) {
             this.currentManagedUser = foundUser;
             this.updateUserManagementInfo();
-            this.showNotification('✅ Найдено', `Пользователь: ${foundUser.username}`, 'win');
+            this.showNotification('✅ Найдено', `Пользователь: ${foundUser.username} (ID: ${foundUser.id})`, 'win');
         } else {
             this.showNotification('❌ Ошибка', 'Пользователь не найден', 'error');
         }
@@ -709,7 +704,14 @@ class FoxGame {
 
     // Админ-панель: обновление информации о пользователе
     updateUserManagementInfo() {
-        if (!this.currentManagedUser) return;
+        if (!this.currentManagedUser) {
+            document.getElementById('admin-user-id').textContent = '-';
+            document.getElementById('admin-username').textContent = '-';
+            document.getElementById('admin-balance').textContent = '-';
+            document.getElementById('admin-status').textContent = '-';
+            document.getElementById('admin-status').className = 'status-active';
+            return;
+        }
 
         document.getElementById('admin-user-id').textContent = this.currentManagedUser.id;
         document.getElementById('admin-username').textContent = this.currentManagedUser.username;
@@ -742,14 +744,14 @@ class FoxGame {
 
         if (isAdd) {
             this.currentManagedUser.balance += amount;
-            this.showNotification('✅ Успех', `Баланс увеличен на ${amount} ⭐`, 'win');
+            this.showNotification('✅ Успех', `Баланс пользователя ${this.currentManagedUser.username} увеличен на ${amount} ⭐`, 'win');
         } else {
             if (this.currentManagedUser.balance < amount) {
                 this.currentManagedUser.balance = 0;
-                this.showNotification('⚠️ Внимание', 'Баланс обнулен', 'warning');
+                this.showNotification('⚠️ Внимание', `Баланс пользователя ${this.currentManagedUser.username} обнулен`, 'warning');
             } else {
                 this.currentManagedUser.balance -= amount;
-                this.showNotification('✅ Успех', `Баланс уменьшен на ${amount} ⭐`, 'win');
+                this.showNotification('✅ Успех', `Баланс пользователя ${this.currentManagedUser.username} уменьшен на ${amount} ⭐`, 'win');
             }
         }
 
@@ -760,6 +762,12 @@ class FoxGame {
         // Обновляем UI
         this.updateUserManagementInfo();
         this.updateUsersList();
+
+        // Обновляем UI если редактируем текущего пользователя
+        if (this.currentManagedUser.id === this.userData.id) {
+            this.userData = this.currentManagedUser;
+            this.updateUI();
+        }
     }
 
     // Админ-панель: бан/разбан пользователя
@@ -806,6 +814,12 @@ class FoxGame {
             this.showNotification('✅ Успех', `Прогресс пользователя ${this.currentManagedUser.username} сброшен`, 'win');
             this.updateUserManagementInfo();
             this.updateUsersList();
+
+            // Обновляем UI если сбрасываем текущего пользователя
+            if (this.currentManagedUser.id === this.userData.id) {
+                this.userData = this.currentManagedUser;
+                this.updateUI();
+            }
         }
     }
 
@@ -817,15 +831,23 @@ class FoxGame {
         usersGrid.innerHTML = '';
         totalUsers.textContent = Object.keys(this.allUsersData).length;
 
-        Object.values(this.allUsersData).forEach(user => {
+        // Сортируем пользователей по дате регистрации (новые сверху)
+        const sortedUsers = Object.values(this.allUsersData).sort((a, b) => 
+            new Date(b.registrationDate) - new Date(a.registrationDate)
+        );
+
+        sortedUsers.forEach(user => {
             const userCard = document.createElement('div');
             userCard.className = 'user-card';
             if (user.isBanned) {
                 userCard.classList.add('banned');
             }
+            if (user.id === this.userData.id) {
+                userCard.classList.add('current-user');
+            }
             
             userCard.innerHTML = `
-                <div class="user-card-id">${user.id}</div>
+                <div class="user-card-id">ID: ${user.id}</div>
                 <div class="user-card-name">${user.username}</div>
                 <div class="user-card-balance">${user.balance} ⭐</div>
                 <div class="user-card-stats">
@@ -834,6 +856,7 @@ class FoxGame {
                 </div>
                 <div class="user-card-status ${user.isBanned ? 'status-banned' : 'status-active'}">
                     ${user.isBanned ? '🔴 Забанен' : '🟢 Активен'}
+                    ${user.id === this.userData.id ? ' (Вы)' : ''}
                 </div>
             `;
             
@@ -844,6 +867,10 @@ class FoxGame {
             
             usersGrid.appendChild(userCard);
         });
+
+        if (sortedUsers.length === 0) {
+            usersGrid.innerHTML = '<div class="no-users">Нет зарегистрированных пользователей</div>';
+        }
     }
 
     // Админ-панель: обновление всей панели
@@ -852,6 +879,8 @@ class FoxGame {
         this.currentManagedUser = null;
         document.getElementById('user-search').value = '';
         this.updateUserManagementInfo();
+        
+        console.log('📊 Админ-панель обновлена. Пользователей в базе:', Object.keys(this.allUsersData).length);
     }
 
     // Обновление профиля
