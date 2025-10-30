@@ -1,132 +1,88 @@
 class NFTCases {
     constructor() {
-        this.tg = null;
-        this.userData = null;
+        this.userData = this.loadUserData();
         this.isOpening = false;
         this.nftCollection = [];
         this.currentCase = null;
         this.animationId = null;
         this.currentSpeed = 0;
         this.currentPosition = 0;
+        this.adminIds = ['7927169998', '1241573286'];
+        this.allUsersData = this.loadAllUsersData();
+        this.currentManagedUser = null;
         this.init();
     }
 
-    // Инициализация Telegram Web App
-    async initTelegram() {
-        console.log('🔗 Инициализация Telegram Web App...');
-        
-        try {
-            // Проверяем доступность Telegram Web App
-            if (window.Telegram && window.Telegram.WebApp) {
-                this.tg = Telegram.WebApp;
-                
-                // Инициализируем Web App
-                this.tg.ready();
-                this.tg.expand();
-                
-                console.log('✅ Telegram Web App инициализирован');
-                console.log('Платформа:', this.tg.platform);
-                console.log('Версия:', this.tg.version);
-                
-                return true;
-            } else {
-                console.log('⚠️ Telegram Web App не доступен, используем тестовый режим');
-                return false;
-            }
-        } catch (error) {
-            console.error('❌ Ошибка инициализации Telegram:', error);
-            return false;
-        }
-    }
-
-    // Получение данных пользователя из Telegram
-    async getUserFromTelegram() {
-        if (this.tg && this.tg.initDataUnsafe && this.tg.initDataUnsafe.user) {
-            const tgUser = this.tg.initDataUnsafe.user;
-            console.log('👤 Пользователь Telegram:', tgUser);
-            
-            return {
-                id: tgUser.id.toString(),
-                username: tgUser.username || `User${tgUser.id}`,
-                firstName: tgUser.first_name || 'Пользователь',
-                lastName: tgUser.last_name || '',
-                avatar: `https://t.me/i/userpic/320/${tgUser.username}.jpg` || '',
-                isPremium: tgUser.is_premium || false,
-                languageCode: tgUser.language_code || 'ru'
-            };
-        }
-        return null;
-    }
-
     // Загрузка данных пользователя
-    async loadUserData() {
-        console.log('📥 Загрузка данных пользователя...');
-        
-        // Пытаемся получить данные из Telegram
-        const tgUser = await this.getUserFromTelegram();
-        
-        if (tgUser) {
-            // Пользователь авторизован через Telegram
-            const userCookie = this.getCookie('nft_cases_user_' + tgUser.id);
-            
-            if (userCookie) {
-                try {
-                    const savedData = JSON.parse(userCookie);
-                    console.log('✅ Данные загружены из куки');
-                    return { ...savedData, tgUser };
-                } catch (e) {
-                    console.error('Ошибка загрузки данных:', e);
-                }
+    loadUserData() {
+        const userCookie = this.getCookie('nft_cases_user');
+        if (userCookie) {
+            try {
+                return JSON.parse(userCookie);
+            } catch (e) {
+                console.error('Ошибка загрузки данных:', e);
             }
-            
-            // Создаем нового пользователя
-            console.log('🆕 Создание нового пользователя');
-            return {
-                id: 'user_' + tgUser.id,
-                tgUser: tgUser,
-                balance: 25,
-                registrationDate: new Date().toISOString(),
-                stats: {
-                    totalOpened: 0,
-                    totalNFTWon: 0,
-                    mostExpensiveNFT: 0
-                },
-                inventory: []
-            };
-        } else {
-            // Пользователь не авторизован через Telegram
-            console.log('🔐 Пользователь не авторизован');
-            this.showTelegramAuth();
-            return null;
         }
+        
+        const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        return {
+            id: userId,
+            username: 'Игрок' + Math.floor(Math.random() * 1000),
+            balance: 25,
+            registrationDate: new Date().toISOString(),
+            stats: {
+                totalOpened: 0,
+                totalNFTWon: 0,
+                mostExpensiveNFT: 0
+            },
+            inventory: [],
+            isBanned: false
+        };
     }
 
-    // Показать экран авторизации Telegram
-    showTelegramAuth() {
-        console.log('🔐 Показываем экран авторизации');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('telegram-auth').style.display = 'flex';
-    }
-
-    // Скрыть экран авторизации
-    hideTelegramAuth() {
-        document.getElementById('telegram-auth').style.display = 'none';
-        document.querySelector('.container').style.display = 'block';
+    // Загрузка данных всех пользователей
+    loadAllUsersData() {
+        const allUsersCookie = this.getCookie('nft_cases_all_users');
+        if (allUsersCookie) {
+            try {
+                const data = JSON.parse(allUsersCookie);
+                // Добавляем текущего пользователя если его нет в списке
+                if (!data[this.userData.id]) {
+                    data[this.userData.id] = this.userData;
+                    this.setCookie('nft_cases_all_users', JSON.stringify(data), 365);
+                }
+                return data;
+            } catch (e) {
+                console.error('Ошибка загрузки данных всех пользователей:', e);
+            }
+        }
+        
+        // Создаем новую базу с текущим пользователем
+        const newData = {
+            [this.userData.id]: this.userData
+        };
+        this.setCookie('nft_cases_all_users', JSON.stringify(newData), 365);
+        return newData;
     }
 
     // Сохранение данных
     saveUserData() {
-        if (this.userData && this.userData.tgUser) {
-            const cookieName = 'nft_cases_user_' + this.userData.tgUser.id;
-            this.setCookie(cookieName, JSON.stringify(this.userData), 365);
-        }
+        this.setCookie('nft_cases_user', JSON.stringify(this.userData), 365);
+        // Также обновляем в общей базе
+        this.allUsersData[this.userData.id] = this.userData;
+        this.setCookie('nft_cases_all_users', JSON.stringify(this.allUsersData), 365);
+    }
+
+    // Сохранение данных всех пользователей
+    saveAllUsersData() {
+        this.setCookie('nft_cases_all_users', JSON.stringify(this.allUsersData), 365);
     }
 
     // Работа с куки
     setCookie(name, value, days) {
         const date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${encodeURIComponent(value)};expires=${date.toUTCString()};path=/;SameSite=Lax`;
+        document.cookie = `${name}=${encodeURIComponent(value)};expires=${date.toUTCString()};path=/`;
     }
 
     getCookie(name) {
@@ -138,33 +94,39 @@ class NFTCases {
         return null;
     }
 
+    // Проверка прав администратора
+    isAdmin() {
+        return this.adminIds.includes(this.userData.id);
+    }
+
     // Загрузка NFT коллекции для кейсов
     async loadNFTCollection() {
         console.log('🚀 Загрузка NFT коллекции для кейсов...');
         
         const basePath = 'NFT/';
         
+        // Коллекция предметов с обновленными шансами выпадения
         this.nftCollection = [
             // 15 звезд (60% шанс)
-            { id: 1, name: 'Медведь', image: `${basePath}bear/bear.gif`, value: 15, rarity: 'common', weight: 60, fallback: '🧸' },
-            { id: 2, name: 'Сердце', image: `${basePath}heart/heart.gif`, value: 15, rarity: 'common', weight: 60, fallback: '❤️' },
+            { id: 1, name: 'Медведь', image: `${basePath}bear/bear.gif`, value: 15, rarity: 'common', weight: 80, fallback: '🧸' },
+            { id: 2, name: 'Сердце', image: `${basePath}heart/heart.gif`, value: 15, rarity: 'common', weight: 80, fallback: '❤️' },
 
             // 25 звезд (20% шанс)
-            { id: 3, name: 'Роза', image: `${basePath}rose/rose.gif`, value: 25, rarity: 'uncommon', weight: 20, fallback: '🌹' },
-            { id: 4, name: 'Подарок', image: `${basePath}gift/gift.gif`, value: 25, rarity: 'uncommon', weight: 20, fallback: '🎁' },
+            { id: 3, name: 'Роза', image: `${basePath}rose/rose.gif`, value: 25, rarity: 'uncommon', weight: 10, fallback: '🌹' },
+            { id: 4, name: 'Подарок', image: `${basePath}gift/gift.gif`, value: 25, rarity: 'uncommon', weight: 10, fallback: '🎁' },
 
             // 50 звезд (15% шанс)
-            { id: 5, name: 'Торт', image: `${basePath}cake/cake.gif`, value: 50, rarity: 'rare', weight: 15, fallback: '🎂' },
-            { id: 6, name: 'Ракета', image: `${basePath}rocket/rocket.gif`, value: 50, rarity: 'rare', weight: 15, fallback: '🚀' },
-            { id: 7, name: 'Цветы', image: `${basePath}flowers/flowers.gif`, value: 50, rarity: 'rare', weight: 15, fallback: '💐' },
+            { id: 5, name: 'Торт', image: `${basePath}cake/cake.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '🎂' },
+            { id: 6, name: 'Ракета', image: `${basePath}rocket/rocket.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '🚀' },
+            { id: 7, name: 'Цветы', image: `${basePath}flowers/flowers.gif`, value: 50, rarity: 'rare', weight: 7, fallback: '💐' },
 
             // 100 звезд (5% шанс)
-            { id: 8, name: 'Кубок', image: `${basePath}cup/cup.gif`, value: 100, rarity: 'epic', weight: 5, fallback: '🏆' },
-            { id: 9, name: 'Кольцо', image: `${basePath}ring/ring.gif`, value: 100, rarity: 'epic', weight: 5, fallback: '💍' },
-            { id: 10, name: 'Алмаз', image: `${basePath}diamond/diamond.gif`, value: 100, rarity: 'epic', weight: 5, fallback: '💎' },
+            { id: 8, name: 'Кубок', image: `${basePath}cup/cup.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '🏆' },
+            { id: 9, name: 'Кольцо', image: `${basePath}ring/ring.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '💍' },
+            { id: 10, name: 'Алмаз', image: `${basePath}diamond/diamond.gif`, value: 100, rarity: 'epic', weight: 3, fallback: '💎' },
         ];
 
-        console.log('✅ NFT коллекция загружена');
+        console.log('✅ NFT коллекция загружена с обновленными шансами');
         return Promise.resolve();
     }
 
@@ -172,26 +134,8 @@ class NFTCases {
     async init() {
         console.log('🎮 Инициализация NFT Cases');
         
-        // Инициализируем Telegram Web App
-        const tgInitialized = await this.initTelegram();
-        
-        if (tgInitialized) {
-            // Загружаем данные пользователя
-            this.userData = await this.loadUserData();
-            
-            if (this.userData) {
-                // Пользователь авторизован
-                await this.loadNFTCollection();
-                this.showLoadingScreen();
-            }
-            // Если пользователь не авторизован, showTelegramAuth уже вызван
-        } else {
-            // Режим без Telegram - для тестирования
-            console.log('🧪 Запуск в тестовом режиме');
-            this.userData = await this.loadUserData();
-            await this.loadNFTCollection();
-            this.showLoadingScreen();
-        }
+        await this.loadNFTCollection();
+        this.showLoadingScreen();
     }
 
     // Экран загрузки
@@ -218,24 +162,19 @@ class NFTCases {
     completeLoading() {
         console.log('✅ Загрузка завершена!');
         document.getElementById('loading').style.display = 'none';
-        this.hideTelegramAuth();
+        document.querySelector('.container').style.display = 'block';
         this.setupEventListeners();
         this.updateUI();
+        
+        // Показываем кнопку админ-панели если пользователь админ
+        if (this.isAdmin()) {
+            document.getElementById('admin-btn').style.display = 'block';
+        }
     }
 
     // Настройка обработчиков
     setupEventListeners() {
         console.log('⚙️ Настройка обработчиков событий');
-        
-        // Кнопка авторизации Telegram
-        document.getElementById('telegram-login-btn').addEventListener('click', () => {
-            this.handleTelegramLogin();
-        });
-
-        // Кнопка выхода
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            this.handleLogout();
-        });
         
         document.getElementById('cases-btn').addEventListener('click', () => {
             this.showSection('cases-section');
@@ -249,6 +188,12 @@ class NFTCases {
         document.getElementById('profile-btn').addEventListener('click', () => {
             this.showSection('profile-section');
             this.updateProfile();
+        });
+
+        // Админ-панель
+        document.getElementById('admin-btn').addEventListener('click', () => {
+            this.showSection('admin-section');
+            this.updateAdminPanel();
         });
 
         // Выбор кейса
@@ -283,39 +228,42 @@ class NFTCases {
             this.showSection('main-menu');
         });
 
-        // Админ-панель
-        document.getElementById('add-stars-btn').addEventListener('click', () => {
-            this.addStars();
+        document.getElementById('back-btn-admin').addEventListener('click', () => {
+            this.showSection('main-menu');
         });
 
-        document.getElementById('reset-progress').addEventListener('click', () => {
-            this.resetProgress();
+        // Сохранение имени
+        document.getElementById('save-username').addEventListener('click', () => {
+            this.saveUsername();
         });
-    }
 
-    // Обработка входа через Telegram
-    handleTelegramLogin() {
-        if (this.tg) {
-            // В Telegram Web App пользователь уже авторизован
-            location.reload();
-        } else {
-            // Вне Telegram - имитируем успешную авторизацию
-            this.showNotification('Информация', 'В Telegram Web App авторизация происходит автоматически', 'win');
-        }
-    }
+        // Админ-панель: поиск пользователя
+        document.getElementById('search-user').addEventListener('click', () => {
+            this.searchUser();
+        });
 
-    // Обработка выхода
-    handleLogout() {
-        if (confirm('Вы уверены, что хотите выйти?')) {
-            if (this.userData && this.userData.tgUser) {
-                // Удаляем куки пользователя
-                const cookieName = 'nft_cases_user_' + this.userData.tgUser.id;
-                this.setCookie(cookieName, '', -1);
-            }
-            
-            // Перезагружаем страницу
-            location.reload();
-        }
+        // Админ-панель: управление балансом
+        document.getElementById('add-balance').addEventListener('click', () => {
+            this.modifyUserBalance(true);
+        });
+
+        document.getElementById('remove-balance').addEventListener('click', () => {
+            this.modifyUserBalance(false);
+        });
+
+        // Админ-панель: бан/разбан
+        document.getElementById('ban-user').addEventListener('click', () => {
+            this.banUser(true);
+        });
+
+        document.getElementById('unban-user').addEventListener('click', () => {
+            this.banUser(false);
+        });
+
+        // Админ-панель: сброс прогресса
+        document.getElementById('reset-user').addEventListener('click', () => {
+            this.resetUserProgress();
+        });
     }
 
     // Показать раздел
@@ -372,6 +320,11 @@ class NFTCases {
     // Открытие кейса (прокрут)
     openCase() {
         if (this.isOpening) return;
+        
+        if (this.userData.isBanned) {
+            this.showNotification('Ошибка', 'Ваш аккаунт заблокирован!', 'error');
+            return;
+        }
         
         if (this.userData.balance < 25) {
             this.showNotification('Ошибка', 'Недостаточно звезд!', 'error');
@@ -469,6 +422,7 @@ class NFTCases {
         
         if (!wonNFTData) return;
         
+        // Простая анимация выигрыша
         this.simpleWinAnimation(closestItem, wonNFTData);
         
         const wonNFT = {
@@ -685,82 +639,230 @@ class NFTCases {
         }
     }
 
-    // Админ-панель: Добавить звезды
-    addStars() {
-        const starsInput = document.getElementById('add-stars');
-        const stars = parseInt(starsInput.value);
-        
-        if (stars > 0 && stars <= 10000) {
-            this.userData.balance += stars;
+    // Сохранение имени
+    saveUsername() {
+        const newUsername = document.getElementById('profile-username').value.trim();
+        if (newUsername && newUsername.length >= 3) {
+            this.userData.username = newUsername;
             this.saveUserData();
             this.updateUI();
-            this.showNotification('⭐ Админ', `Добавлено ${stars} звезд!`, 'win');
+            this.showNotification('✅ Успех', 'Имя пользователя сохранено!', 'win');
         } else {
-            this.showNotification('❌ Ошибка', 'Введите корректное количество звезд (1-10000)', 'error');
+            this.showNotification('❌ Ошибка', 'Имя должно содержать минимум 3 символа', 'error');
         }
     }
 
-    // Админ-панель: Сбросить прогресс
-    resetProgress() {
-        if (confirm('Вы уверены что хотите сбросить весь прогресс?')) {
-            this.userData = {
-                id: this.userData.id,
-                tgUser: this.userData.tgUser,
-                balance: 25,
-                registrationDate: new Date().toISOString(),
-                stats: {
-                    totalOpened: 0,
-                    totalNFTWon: 0,
-                    mostExpensiveNFT: 0
-                },
-                inventory: []
-            };
-            
-            this.saveUserData();
-            this.updateUI();
-            this.updateInventory();
-            this.showNotification('🔄 Сброс', 'Прогресс сброшен!', 'win');
+    // Админ-панель: поиск пользователя
+    searchUser() {
+        const searchTerm = document.getElementById('user-search').value.trim();
+        if (!searchTerm) {
+            this.showNotification('❌ Ошибка', 'Введите ID или имя пользователя', 'error');
+            return;
         }
+
+        let foundUser = null;
+        
+        // Ищем по ID
+        if (this.allUsersData[searchTerm]) {
+            foundUser = this.allUsersData[searchTerm];
+        } else {
+            // Ищем по имени
+            for (const userId in this.allUsersData) {
+                if (this.allUsersData[userId].username.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    foundUser = this.allUsersData[userId];
+                    break;
+                }
+            }
+        }
+
+        if (foundUser) {
+            this.currentManagedUser = foundUser;
+            this.updateUserManagementInfo();
+            this.showNotification('✅ Найдено', `Пользователь: ${foundUser.username}`, 'win');
+        } else {
+            this.showNotification('❌ Ошибка', 'Пользователь не найден', 'error');
+        }
+    }
+
+    // Админ-панель: обновление информации о пользователе
+    updateUserManagementInfo() {
+        if (!this.currentManagedUser) return;
+
+        document.getElementById('admin-user-id').textContent = this.currentManagedUser.id;
+        document.getElementById('admin-username').textContent = this.currentManagedUser.username;
+        document.getElementById('admin-balance').textContent = this.currentManagedUser.balance + ' ⭐';
+        
+        const statusElement = document.getElementById('admin-status');
+        if (this.currentManagedUser.isBanned) {
+            statusElement.textContent = 'Забанен';
+            statusElement.className = 'status-banned';
+        } else {
+            statusElement.textContent = 'Активен';
+            statusElement.className = 'status-active';
+        }
+    }
+
+    // Админ-панель: изменение баланса
+    modifyUserBalance(isAdd) {
+        if (!this.currentManagedUser) {
+            this.showNotification('❌ Ошибка', 'Сначала выберите пользователя', 'error');
+            return;
+        }
+
+        const amountInput = document.getElementById('balance-amount');
+        const amount = parseInt(amountInput.value);
+        
+        if (isNaN(amount) || amount <= 0) {
+            this.showNotification('❌ Ошибка', 'Введите корректную сумму', 'error');
+            return;
+        }
+
+        if (isAdd) {
+            this.currentManagedUser.balance += amount;
+            this.showNotification('✅ Успех', `Баланс увеличен на ${amount} ⭐`, 'win');
+        } else {
+            if (this.currentManagedUser.balance < amount) {
+                this.currentManagedUser.balance = 0;
+                this.showNotification('⚠️ Внимание', 'Баланс обнулен', 'warning');
+            } else {
+                this.currentManagedUser.balance -= amount;
+                this.showNotification('✅ Успех', `Баланс уменьшен на ${amount} ⭐`, 'win');
+            }
+        }
+
+        // Сохраняем изменения
+        this.allUsersData[this.currentManagedUser.id] = this.currentManagedUser;
+        this.saveAllUsersData();
+        
+        // Обновляем UI
+        this.updateUserManagementInfo();
+        this.updateUsersList();
+    }
+
+    // Админ-панель: бан/разбан пользователя
+    banUser(isBan) {
+        if (!this.currentManagedUser) {
+            this.showNotification('❌ Ошибка', 'Сначала выберите пользователя', 'error');
+            return;
+        }
+
+        this.currentManagedUser.isBanned = isBan;
+        this.allUsersData[this.currentManagedUser.id] = this.currentManagedUser;
+        this.saveAllUsersData();
+
+        if (isBan) {
+            this.showNotification('✅ Успех', `Пользователь ${this.currentManagedUser.username} забанен`, 'warning');
+        } else {
+            this.showNotification('✅ Успех', `Пользователь ${this.currentManagedUser.username} разбанен`, 'win');
+        }
+
+        this.updateUserManagementInfo();
+        this.updateUsersList();
+    }
+
+    // Админ-панель: сброс прогресса
+    resetUserProgress() {
+        if (!this.currentManagedUser) {
+            this.showNotification('❌ Ошибка', 'Сначала выберите пользователя', 'error');
+            return;
+        }
+
+        if (confirm(`Вы уверены, что хотите сбросить прогресс пользователя ${this.currentManagedUser.username}?`)) {
+            this.currentManagedUser.balance = 25;
+            this.currentManagedUser.inventory = [];
+            this.currentManagedUser.stats = {
+                totalOpened: 0,
+                totalNFTWon: 0,
+                mostExpensiveNFT: 0
+            };
+            this.currentManagedUser.isBanned = false;
+
+            this.allUsersData[this.currentManagedUser.id] = this.currentManagedUser;
+            this.saveAllUsersData();
+
+            this.showNotification('✅ Успех', `Прогресс пользователя ${this.currentManagedUser.username} сброшен`, 'win');
+            this.updateUserManagementInfo();
+            this.updateUsersList();
+        }
+    }
+
+    // Админ-панель: обновление списка пользователей
+    updateUsersList() {
+        const usersGrid = document.getElementById('users-grid');
+        const totalUsers = document.getElementById('total-users');
+        
+        usersGrid.innerHTML = '';
+        totalUsers.textContent = Object.keys(this.allUsersData).length;
+
+        Object.values(this.allUsersData).forEach(user => {
+            const userCard = document.createElement('div');
+            userCard.className = 'user-card';
+            if (user.isBanned) {
+                userCard.classList.add('banned');
+            }
+            
+            userCard.innerHTML = `
+                <div class="user-card-id">${user.id}</div>
+                <div class="user-card-name">${user.username}</div>
+                <div class="user-card-balance">${user.balance} ⭐</div>
+                <div class="user-card-stats">
+                    <small>Кейсы: ${user.stats.totalOpened}</small>
+                    <small>NFT: ${user.stats.totalNFTWon}</small>
+                </div>
+                <div class="user-card-status ${user.isBanned ? 'status-banned' : 'status-active'}">
+                    ${user.isBanned ? '🔴 Забанен' : '🟢 Активен'}
+                </div>
+            `;
+            
+            userCard.addEventListener('click', () => {
+                this.currentManagedUser = user;
+                this.updateUserManagementInfo();
+            });
+            
+            usersGrid.appendChild(userCard);
+        });
+    }
+
+    // Админ-панель: обновление всей панели
+    updateAdminPanel() {
+        this.updateUsersList();
+        this.currentManagedUser = null;
+        document.getElementById('user-search').value = '';
+        this.updateUserManagementInfo();
     }
 
     // Обновление профиля
     updateProfile() {
-        if (this.userData.tgUser) {
-            document.getElementById('profile-name').textContent = this.userData.tgUser.firstName;
-            document.getElementById('profile-id').textContent = `ID: ${this.userData.tgUser.id}`;
-            document.getElementById('telegram-id').textContent = this.userData.tgUser.id;
-            
-            if (this.userData.tgUser.avatar) {
-                document.getElementById('profile-avatar').src = this.userData.tgUser.avatar;
-            }
-        }
-        
+        document.getElementById('profile-username').value = this.userData.username;
         document.getElementById('profile-balance').textContent = this.userData.balance + ' ⭐';
-        document.getElementById('registration-date').textContent = 
-            new Date(this.userData.registrationDate).toLocaleDateString('ru-RU');
+        document.getElementById('user-id').textContent = this.userData.id;
+        document.getElementById('registration-date').textContent = new Date(this.userData.registrationDate).toLocaleDateString('ru-RU');
+        
         document.getElementById('total-opened').textContent = this.userData.stats.totalOpened;
         document.getElementById('total-nft-won').textContent = this.userData.stats.totalNFTWon;
         document.getElementById('most-expensive').textContent = this.userData.stats.mostExpensiveNFT + ' ⭐';
     }
 
-    // Обновление интерфейса
+    // Обновление UI
     updateUI() {
         document.getElementById('balance').textContent = this.userData.balance;
+        document.getElementById('username').textContent = this.userData.username;
         
-        if (this.userData.tgUser) {
-            document.getElementById('username').textContent = this.userData.tgUser.firstName;
-            
-            if (this.userData.tgUser.avatar) {
-                document.getElementById('user-avatar').src = this.userData.tgUser.avatar;
-            }
+        const levelBadge = document.querySelector('.level-badge');
+        if (this.userData.stats.totalOpened >= 50) {
+            levelBadge.textContent = 'Эксперт';
+            levelBadge.className = 'level-badge expert';
+        } else if (this.userData.stats.totalOpened >= 20) {
+            levelBadge.textContent = 'Опытный';
+            levelBadge.className = 'level-badge experienced';
+        } else {
+            levelBadge.textContent = 'Новичок';
+            levelBadge.className = 'level-badge';
         }
-        
-        this.updateProfile();
     }
 }
 
-// Запуск приложения
+// Инициализация игры
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== NFT CASES ЗАПУЩЕН ===');
-    new NFTCases();
+    window.nftGame = new NFTCases();
 });
