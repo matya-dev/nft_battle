@@ -1368,3 +1368,195 @@ body::before {
     }
 }
 }
+
+/* Админ-панель */
+.admin-panel {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.1) 0%, rgba(142, 68, 173, 0.05) 100%);
+    border: 2px solid rgba(155, 89, 182, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.admin-panel h3 {
+    text-align: center;
+    color: #9b59b6;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    text-shadow: 0 2px 4px rgba(155, 89, 182, 0.3);
+}
+
+.admin-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.admin-section h4 {
+    color: #9b59b6;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+/* Системная статистика */
+.system-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.system-stat {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    color: #b0b0b0;
+    font-size: 0.9em;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Список пользователей */
+.users-list-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.users-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    font-weight: bold;
+    color: #9b59b6;
+    font-size: 0.9em;
+}
+
+.users-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.user-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: center;
+}
+
+.user-item:last-child {
+    border-bottom: none;
+}
+
+.user-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-small {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-details-small {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    color: #fff;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.user-id {
+    color: #888;
+    font-size: 0.8em;
+}
+
+.user-balance-small, .user-cases, .user-nfts {
+    color: #fff;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.user-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.admin-btn-small {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+}
+
+.admin-btn-small:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+/* Адаптивность для админ-панели */
+@media (max-width: 768px) {
+    .users-list-header,
+    .user-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .user-info {
+        justify-content: center;
+    }
+    
+    .system-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-controls {
+        flex-direction: column;
+    }
+    
+    .admin-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .admin-input {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
