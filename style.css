@@ -804,3 +804,72 @@ body {
         min-width: auto;
     }
 }
+
+/* Стили остаются такими же как в предыдущем ответе, но добавлю несколько новых классов */
+
+.nft-fallback {
+    font-size: 2em;
+    margin-bottom: 5px;
+}
+
+/* Остальные стили из предыдущего ответа остаются без изменений */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+}
+
+/* ... и все остальные стили из предыдущего ответа ... */
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header {
+        padding: 10px 15px;
+    }
+    
+    .menu-card, .case-card {
+        padding: 15px;
+    }
+    
+    .roulette-item {
+        width: 100px;
+        height: 100px;
+        margin: 10px 8px;
+    }
+    
+    .inventory-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .action-group label {
+        min-width: auto;
+    }
+}
