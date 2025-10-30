@@ -1189,4 +1189,182 @@ body::before {
         opacity: 0;
         transform: translateX(-50%) translateY(-30px);
     }
+
+    /* Telegram Auth Styles */
+.telegram-auth {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.auth-container {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    padding: 40px 30px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    max-width: 350px;
+    width: 90%;
+    animation: authSlideIn 0.6s ease;
+}
+
+.auth-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+    animation: authIconFloat 3s ease-in-out infinite;
+}
+
+.auth-container h2 {
+    color: #fff;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.auth-container p {
+    color: #b0b0b0;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.telegram-btn {
+    background: linear-gradient(135deg, #0088cc 0%, #00a2e8 100%);
+    color: white;
+    border: none;
+    padding: 18px 30px;
+    border-radius: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-shadow: 0 6px 20px rgba(0, 136, 204, 0.4);
+}
+
+.telegram-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 136, 204, 0.6);
+}
+
+.auth-note {
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+@keyframes authSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes authIconFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+/* User Avatar */
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #ffd700;
+    object-fit: cover;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+    object-fit: cover;
+    margin-right: 20px;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Profile User Info */
+.profile-user {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+}
+
+.profile-user-info {
+    flex: 1;
+}
+
+.profile-name {
+    color: #fff;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.profile-id {
+    color: #b0b0b0;
+    font-size: 0.9em;
+}
+
+/* Logout Button */
+.logout-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1em;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 107, 107, 0.2);
+    border-color: #ff6b6b;
+    transform: scale(1.05);
+}
+
+/* Telegram Web App Adjustments */
+@media (max-width: 768px) {
+    .auth-container {
+        padding: 30px 20px;
+        margin: 20px;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .profile-avatar {
+        width: 70px;
+        height: 70px;
+    }
+}
 }
